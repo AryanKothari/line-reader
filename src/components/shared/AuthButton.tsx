@@ -54,12 +54,20 @@ export function AuthButton() {
 
   return (
     <>
-      <button
-        onClick={() => setShowModal(true)}
-        className="text-sm text-text-secondary hover:text-cream transition-colors"
-      >
-        Sign in
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => { setIsSignUp(false); setShowModal(true) }}
+          className="text-sm text-cream hover:text-white transition-colors font-medium"
+        >
+          Log in
+        </button>
+        <button
+          onClick={() => { setIsSignUp(true); setShowModal(true) }}
+          className="text-sm bg-amber text-stage-deep px-4 py-1.5 rounded-lg font-semibold hover:bg-amber-dim transition-colors"
+        >
+          Sign up
+        </button>
+      </div>
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowModal(false)}>
