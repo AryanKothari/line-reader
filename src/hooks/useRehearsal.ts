@@ -62,23 +62,45 @@ export function useRehearsal() {
 
       resolveRef.current = done
 
-      // Also listen for speech in case user speaks instead of types
+      // Listen for speech — correct match advances, wrong match counts as attempt
+      let speechTimeout: ReturnType<typeof setTimeout> | null = null
+      let currentSpeech = ''
+
       recognition.startListening(({ final: finalText, interim }) => {
         if (resolved) return
         const state = useScriptStore.getState()
 
-        // Only accept speech match in 'revealed' phase (after 3 failed typing attempts)
-        // or if they happen to speak correctly during typing phase
-        const allText = (finalText + ' ' + interim).trim()
+        if (finalText.trim()) currentSpeech += ' ' + finalText.trim()
+        const allText = (currentSpeech + ' ' + interim).trim()
+
         if (allText && fuzzyMatch(allText, expectedLine)) {
-          // If in revealed phase, this completes the turn
-          if (state.userTurnPhase === 'revealed') {
-            done()
-          }
-          // During typing phase, speech match also works
-          if (state.userTurnPhase === 'typing') {
-            done()
-          }
+          if (speechTimeout) clearTimeout(speechTimeout)
+          done()
+          return
+        }
+
+        // When we get final text, start a timer — if no more speech comes,
+        // treat it as a completed (wrong) attempt
+        if (finalText.trim() && state.userTurnPhase === 'typing') {
+          if (speechTimeout) clearTimeout(speechTimeout)
+          speechTimeout = setTimeout(() => {
+            if (resolved) return
+            const s = useScriptStore.getState()
+            if (s.userTurnPhase !== 'typing') return
+
+            // Count as a failed voice attempt
+            const correct = s.submitAttempt(currentSpeech.trim())
+            currentSpeech = ''
+            if (correct) {
+              done()
+            }
+          }, 2000) // 2s silence = attempt is done
+        }
+
+        // In revealed phase, accept any speech match
+        if (allText && state.userTurnPhase === 'revealed' && fuzzyMatch(allText, expectedLine)) {
+          if (speechTimeout) clearTimeout(speechTimeout)
+          done()
         }
       })
     })
