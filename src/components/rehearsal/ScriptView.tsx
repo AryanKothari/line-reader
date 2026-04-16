@@ -9,11 +9,10 @@ type Props = {
   entries: ScriptEntry[]
   currentIndex: number
   selectedCharacter: string
-  practiceMode: boolean
   characterNames: string[]
 }
 
-export function ScriptView({ entries, currentIndex, selectedCharacter, practiceMode, characterNames }: Props) {
+export function ScriptView({ entries, currentIndex, selectedCharacter, characterNames }: Props) {
   const currentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -34,7 +33,8 @@ export function ScriptView({ entries, currentIndex, selectedCharacter, practiceM
         const charLabel = isDirection && entry.character === 'STAGE DIRECTION' ? 'Stage Direction' : entry.character
         const charColor = colorMap.get(entry.character) || 'text-text-secondary'
 
-        const showHidden = !practiceMode && isUser && isCurrent
+        // Always hide user's current line — they need to type or speak it
+        const hideText = isUser && isCurrent
 
         return (
           <div
@@ -54,8 +54,8 @@ export function ScriptView({ entries, currentIndex, selectedCharacter, practiceM
               {charLabel}
             </div>
             <div className={`text-base leading-relaxed ${isDirection ? 'text-text-secondary text-sm italic' : ''}`}>
-              {showHidden ? (
-                <span className="text-amber-dim italic text-sm">(your line — speak it!)</span>
+              {hideText ? (
+                <span className="text-amber-dim italic text-sm">Your turn</span>
               ) : (
                 entry.line
               )}

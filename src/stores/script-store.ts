@@ -14,6 +14,11 @@ interface ScriptStore {
   isRunning: boolean
   practiceMode: boolean
 
+  // User turn state
+  userTurnPhase: 'typing' | 'revealed' | null  // null = not user's turn
+  attemptsLeft: number
+  lastAttempt: string
+
   // Actions
   setParsedScript: (entries: ScriptEntry[]) => void
   setUploadedFile: (file: File | null) => void
@@ -24,6 +29,12 @@ interface ScriptStore {
   updateCharacter: (index: number, character: string) => void
   selectCharacter: (name: string) => void
   refreshCharacters: () => void
+
+  // User turn actions
+  startUserTurn: () => void
+  submitAttempt: (text: string) => boolean  // returns true if correct
+  revealLine: () => void
+  clearUserTurn: () => void
 
   // Rehearsal actions
   setCurrentLineIndex: (index: number) => void
@@ -46,6 +57,9 @@ export const useScriptStore = create<ScriptStore>((set, get) => ({
   isPaused: false,
   isRunning: false,
   practiceMode: true,
+  userTurnPhase: null,
+  attemptsLeft: 3,
+  lastAttempt: '',
 
   setParsedScript: (entries) => {
     const characters = extractCharacters(entries)
@@ -98,7 +112,33 @@ export const useScriptStore = create<ScriptStore>((set, get) => ({
   refreshCharacters: () =>
     set(state => ({ characters: extractCharacters(state.parsedScript) })),
 
-  setCurrentLineIndex: (index) => set({ currentLineIndex: index }),
+  startUserTurn: () => set({ userTurnPhase: 'typing', attemptsLeft: 3, lastAttempt: '' }),
+
+  submitAttempt: (text: string) => {
+    const { currentLineIndex, parsedScript, attemptsLeft } = get()
+    const expected = parsedScript[currentLineIndex]?.line || ''
+    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim()
+    const isCorrect = normalize(text) === normalize(expected)
+
+    if (isCorrect) {
+      set({ userTurnPhase: null, lastAttempt: '' })
+      return true
+    }
+
+    const newAttempts = attemptsLeft - 1
+    if (newAttempts <= 0) {
+      set({ userTurnPhase: 'revealed', attemptsLeft: 0, lastAttempt: text })
+    } else {
+      set({ attemptsLeft: newAttempts, lastAttempt: text })
+    }
+    return false
+  },
+
+  revealLine: () => set({ userTurnPhase: 'revealed', attemptsLeft: 0 }),
+
+  clearUserTurn: () => set({ userTurnPhase: null, attemptsLeft: 3, lastAttempt: '' }),
+
+  setCurrentLineIndex: (index) => set({ currentLineIndex: index, userTurnPhase: null, attemptsLeft: 3, lastAttempt: '' }),
   advanceLine: () => set(state => ({ currentLineIndex: state.currentLineIndex + 1 })),
   goBack: () => set(state => ({ currentLineIndex: Math.max(0, state.currentLineIndex - 1) })),
   pause: () => set({ isPaused: true }),
@@ -116,5 +156,8 @@ export const useScriptStore = create<ScriptStore>((set, get) => ({
       isPaused: false,
       isRunning: false,
       practiceMode: true,
+      userTurnPhase: null,
+      attemptsLeft: 3,
+      lastAttempt: '',
     }),
 }))

@@ -27,8 +27,10 @@ export function useRehearsal() {
     if (useScriptStore.getState().isPaused || !runningRef.current) return
 
     if (entry.character === selectedCharacter && entry.type === 'dialogue') {
-      // User's turn — listen
-      await waitForUserSpeech(entry.line)
+      // User's turn — show typing input, listen for speech
+      useScriptStore.getState().startUserTurn()
+      await waitForUserTurn(entry.line)
+      useScriptStore.getState().clearUserTurn()
       if (!runningRef.current || useScriptStore.getState().isPaused) return
       await delay(400)
       processLine(index + 1)
@@ -47,33 +49,48 @@ export function useRehearsal() {
     }
   }, [])
 
-  const waitForUserSpeech = (expectedLine: string): Promise<boolean> => {
+  const waitForUserTurn = (expectedLine: string): Promise<void> => {
     return new Promise(resolve => {
       let resolved = false
-      const finalChunks: string[] = []
 
       const done = () => {
         if (resolved) return
         resolved = true
         recognition.stopListening()
-        resolve(true)
+        resolve()
       }
 
       resolveRef.current = done
 
-      const success = recognition.startListening(({ final: finalText, interim }) => {
+      // Also listen for speech in case user speaks instead of types
+      recognition.startListening(({ final: finalText, interim }) => {
         if (resolved) return
-        if (finalText.trim()) finalChunks.push(finalText.trim())
-        if (finalChunks.length > 3) finalChunks.shift()
-        const allText = (finalChunks.join(' ') + ' ' + interim).trim()
+        const state = useScriptStore.getState()
+
+        // Only accept speech match in 'revealed' phase (after 3 failed typing attempts)
+        // or if they happen to speak correctly during typing phase
+        const allText = (finalText + ' ' + interim).trim()
         if (allText && fuzzyMatch(allText, expectedLine)) {
-          done()
+          // If in revealed phase, this completes the turn
+          if (state.userTurnPhase === 'revealed') {
+            done()
+          }
+          // During typing phase, speech match also works
+          if (state.userTurnPhase === 'typing') {
+            done()
+          }
         }
       })
-
-      if (!success) resolve(false)
     })
   }
+
+  // Watch for correct typed submission to resolve the turn
+  const handleTypedCorrect = useCallback(() => {
+    if (resolveRef.current) {
+      resolveRef.current()
+      resolveRef.current = null
+    }
+  }, [])
 
   const start = useCallback(() => {
     recognition.initRecognition()
@@ -106,6 +123,7 @@ export function useRehearsal() {
     synthesis.stopSpeaking()
     recognition.stopListening()
     resolveRef.current = null
+    useScriptStore.getState().clearUserTurn()
     processLine(currentLineIndex - 1)
   }, [processLine])
 
@@ -124,6 +142,7 @@ export function useRehearsal() {
     synthesis.stopSpeaking()
     recognition.stopListening()
     resolveRef.current = null
+    useScriptStore.getState().clearUserTurn()
     useScriptStore.getState().resume()
     processLine(0)
   }, [processLine])
@@ -131,6 +150,7 @@ export function useRehearsal() {
   const stop = useCallback(() => {
     runningRef.current = false
     useScriptStore.getState().setRunning(false)
+    useScriptStore.getState().clearUserTurn()
     synthesis.stopSpeaking()
     recognition.shutdownRecognition()
     resolveRef.current = null
@@ -140,6 +160,8 @@ export function useRehearsal() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!store.isRunning && !store.isPaused) return
+      // Don't capture keys when user is typing in the input
+      if ((e.target as HTMLElement)?.tagName === 'INPUT') return
       switch (e.key) {
         case ' ':
         case 'ArrowRight':
@@ -164,5 +186,5 @@ export function useRehearsal() {
     return () => window.removeEventListener('keydown', handler)
   }, [store.isRunning, store.isPaused, manualAdvance, goBack, resume, pause, restart])
 
-  return { start, stop, manualAdvance, goBack, pause, resume, restart }
+  return { start, stop, manualAdvance, goBack, pause, resume, restart, handleTypedCorrect }
 }
