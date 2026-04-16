@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useScriptStore } from '@/stores/script-store'
 import { Logo } from '@/components/shared/Logo'
+import { SaveButton } from '@/components/shared/SaveButton'
 import { ScriptView } from '@/components/rehearsal/ScriptView'
 import { Controls } from '@/components/rehearsal/Controls'
 import { UserTurnInput } from '@/components/rehearsal/UserTurnInput'
@@ -54,7 +55,7 @@ export default function RehearsalPage() {
             <div className="h-full bg-amber rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
           </div>
         </div>
-        <div className="w-8" />
+        <SaveButton />
       </header>
 
       <ScriptView

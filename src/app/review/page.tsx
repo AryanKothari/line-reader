@@ -1,21 +1,18 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useScriptStore } from '@/stores/script-store'
-import { useAuth } from '@/lib/auth-context'
 import { Logo } from '@/components/shared/Logo'
+import { SaveButton } from '@/components/shared/SaveButton'
 import { DragList } from '@/components/review/DragList'
 import { PdfPreview } from '@/components/review/PdfPreview'
-import { saveScript as saveToLocal, exportScriptAsJson, importScriptFromJson } from '@/lib/storage'
-import { saveProject } from '@/lib/projects'
+import { exportScriptAsJson, importScriptFromJson } from '@/lib/storage'
 
 export default function ReviewPage() {
   const router = useRouter()
   const store = useScriptStore()
-  const { user } = useAuth()
   const importRef = useRef<HTMLInputElement>(null)
-  const [saving, setSaving] = useState(false)
 
   const characterNames = [...new Set(
     store.parsedScript
@@ -28,31 +25,6 @@ export default function ReviewPage() {
   }, [store.parsedScript.length, router])
 
   if (!store.parsedScript.length) return null
-
-  const handleSave = async () => {
-    const title = store.projectTitle || prompt('Name this project:')
-    if (!title) return
-    setSaving(true)
-
-    try {
-      if (user) {
-        const project = await saveProject({
-          id: store.projectId || undefined,
-          title,
-          entries: store.parsedScript,
-          selected_character: store.selectedCharacter,
-        })
-        store.setProject(project.id, project.title)
-      } else {
-        saveToLocal(title, store.parsedScript)
-      }
-      setSaving(false)
-    } catch (err) {
-      console.error('Save error:', err)
-      setSaving(false)
-      alert('Failed to save. Try again.')
-    }
-  }
 
   const handleImport = async (file: File) => {
     try {
@@ -71,7 +43,7 @@ export default function ReviewPage() {
           Back
         </button>
         <Logo size="sm" />
-        <div className="w-16" />
+        <SaveButton />
       </header>
 
       <div className="flex-1 flex flex-col px-6 py-4 max-w-7xl mx-auto w-full">
@@ -109,9 +81,6 @@ export default function ReviewPage() {
         </div>
 
         <div className="flex items-center justify-center gap-3 mt-4">
-          <button onClick={handleSave} className="px-4 py-2 bg-stage-card border border-text-dim rounded-lg text-text-secondary text-sm hover:border-amber hover:text-amber transition-all">
-            {saving ? 'Saving...' : store.projectId ? 'Save' : 'Save Project'}
-          </button>
           <button onClick={() => exportScriptAsJson(store.parsedScript)} className="px-4 py-2 bg-stage-card border border-text-dim rounded-lg text-text-secondary text-sm hover:border-amber hover:text-amber transition-all">
             Export JSON
           </button>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useScriptStore } from '@/stores/script-store'
 import { Logo } from '@/components/shared/Logo'
 import { AuthButton } from '@/components/shared/AuthButton'
+import { SaveButton } from '@/components/shared/SaveButton'
 import { CharacterCard } from '@/components/setup/CharacterCard'
 import { VoiceSettings } from '@/components/setup/VoiceSettings'
 import * as synthesis from '@/lib/speech/synthesis'
@@ -44,6 +45,7 @@ export default function SetupPage() {
           Edit Script
         </button>
         <div className="flex-1" />
+        <SaveButton />
         <Logo size="sm" />
         <div className="ml-4"><AuthButton /></div>
       </header>
