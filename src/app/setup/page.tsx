@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useScriptStore } from '@/stores/script-store'
 import { Logo } from '@/components/shared/Logo'
+import { AuthButton } from '@/components/shared/AuthButton'
 import { CharacterCard } from '@/components/setup/CharacterCard'
 import { VoiceSettings } from '@/components/setup/VoiceSettings'
 import * as synthesis from '@/lib/speech/synthesis'
@@ -44,6 +45,7 @@ export default function SetupPage() {
         </button>
         <div className="flex-1" />
         <Logo size="sm" />
+        <div className="ml-4"><AuthButton /></div>
       </header>
 
       <div className="flex-1 max-w-lg mx-auto w-full px-4 py-8">

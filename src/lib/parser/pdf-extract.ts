@@ -1,5 +1,5 @@
 import { cleanOcrText } from './ocr-cleanup'
-import * as aiVoices from '@/lib/ai-voices'
+import { supabase } from '@/lib/supabase'
 
 type StatusCallback = (msg: string) => void
 
@@ -30,6 +30,22 @@ async function loadPdfJs() {
     script.onerror = () => reject(new Error('Failed to load pdf.js'))
     document.head.appendChild(script)
   })
+}
+
+async function getAuthToken(): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.getSession()
+  return session?.access_token ?? null
+}
+
+async function isPremium(): Promise<boolean> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return false
+  const { data } = await supabase
+    .from('profiles')
+    .select('premium')
+    .eq('id', session.user.id)
+    .single()
+  return data?.premium === true
 }
 
 export async function extractTextFromPdf(
@@ -68,28 +84,33 @@ export async function extractTextFromPdf(
     pages.push(pageText)
   }
 
-  // If pdf.js got real text, use it
   if (totalChars >= 20) {
     return pages.join('\n')
   }
 
-  // Scanned PDF — try AI vision first, fall back to Tesseract
-  const apiKey = aiVoices.getApiKey()
-  if (apiKey) {
-    return await extractTextWithVision(pdf, apiKey, onStatus)
+  // Scanned PDF — try AI vision if premium, fall back to Tesseract
+  const premium = await isPremium()
+  if (premium) {
+    try {
+      return await extractTextWithVision(pdf, onStatus)
+    } catch {
+      onStatus?.('AI vision failed, falling back to OCR...')
+    }
   }
   return await extractTextWithTesseract(pdf, onStatus)
 }
 
-// ═══ AI Vision extraction (GPT-4o) ═══
+// ═══ AI Vision extraction via API route ═══
 
 async function extractTextWithVision(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pdf: any,
-  apiKey: string,
   onStatus?: StatusCallback
 ): Promise<string> {
   onStatus?.('Scanned PDF detected — using AI vision for best accuracy...')
+
+  const token = await getAuthToken()
+  if (!token) throw new Error('Not authenticated')
 
   const pageTexts: string[] = []
 
@@ -104,48 +125,22 @@ async function extractTextWithVision(
     await page.render({ canvasContext: canvas.getContext('2d')!, viewport }).promise
 
     const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
-    const text = await visionOcr(dataUrl, apiKey)
+
+    const response = await fetch('/api/vision-ocr', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ image: dataUrl }),
+    })
+
+    if (!response.ok) throw new Error('Vision OCR failed')
+    const { text } = await response.json()
     pageTexts.push(text)
   }
 
   return pageTexts.join('\n')
-}
-
-async function visionOcr(imageDataUrl: string, apiKey: string): Promise<string> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: 'Extract all text from this image of a script/screenplay page. Preserve the exact formatting with character names followed by colons and their dialogue. Output ONLY the extracted text, nothing else. Preserve line breaks between different character lines.',
-            },
-            {
-              type: 'image_url',
-              image_url: { url: imageDataUrl, detail: 'high' },
-            },
-          ],
-        },
-      ],
-      max_tokens: 2000,
-      temperature: 0,
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error(`Vision API failed: ${response.status}`)
-  }
-
-  const data = await response.json()
-  return data.choices?.[0]?.message?.content || ''
 }
 
 // ═══ Tesseract fallback (free, lower quality) ═══
@@ -155,10 +150,8 @@ function preprocessCanvas(canvas: HTMLCanvasElement): HTMLCanvasElement {
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
   const data = imageData.data
 
-  // Convert to grayscale + increase contrast
   for (let i = 0; i < data.length; i += 4) {
     const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
-    // Increase contrast: push values toward black or white
     const contrast = gray < 128 ? Math.max(0, gray * 0.6) : Math.min(255, gray * 1.2 + 30)
     data[i] = data[i + 1] = data[i + 2] = contrast
   }
@@ -185,7 +178,7 @@ async function extractTextWithTesseract(pdf: any, onStatus?: StatusCallback): Pr
   for (let i = 1; i <= pdf.numPages; i++) {
     onStatus?.(`OCR: processing page ${i} of ${pdf.numPages}...`)
     const page = await pdf.getPage(i)
-    const scale = 3  // higher scale for better OCR accuracy
+    const scale = 3
     const viewport = page.getViewport({ scale })
     canvas.width = viewport.width
     canvas.height = viewport.height

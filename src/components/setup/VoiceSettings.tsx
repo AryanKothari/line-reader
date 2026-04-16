@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import * as synthesis from '@/lib/speech/synthesis'
 import * as aiVoices from '@/lib/ai-voices'
+import { useAuth } from '@/lib/auth-context'
 
 type Props = {
   characterNames: string[]
@@ -10,16 +11,14 @@ type Props = {
 }
 
 export function VoiceSettings({ characterNames, selectedCharacter }: Props) {
+  const { isPremium, user } = useAuth()
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([])
   const [assignments, setAssignments] = useState<Record<string, string>>({})
   const [tier, setTier] = useState<'free' | 'premium'>('free')
-  const [apiKey, setApiKey] = useState('')
 
   useEffect(() => {
-    aiVoices.initAiVoices()
-    setApiKey(aiVoices.getApiKey())
-    if (aiVoices.isEnabled()) setTier('premium')
-  }, [])
+    if (isPremium) setTier('premium')
+  }, [isPremium])
 
   useEffect(() => {
     const loadVoices = () => setBrowserVoices(synthesis.getEnglishVoices())
@@ -28,7 +27,6 @@ export function VoiceSettings({ characterNames, selectedCharacter }: Props) {
     return () => speechSynthesis.removeEventListener('voiceschanged', loadVoices)
   }, [])
 
-  // Sync assignments from the active voice map
   useEffect(() => {
     if (tier === 'premium') {
       const map = aiVoices.getCharacterVoiceMap()
@@ -44,13 +42,9 @@ export function VoiceSettings({ characterNames, selectedCharacter }: Props) {
   }, [browserVoices, selectedCharacter, tier])
 
   const handleTierChange = (newTier: 'free' | 'premium') => {
+    if (newTier === 'premium' && !isPremium) return
     setTier(newTier)
     aiVoices.setEnabled(newTier === 'premium')
-  }
-
-  const handleApiKeyChange = (key: string) => {
-    setApiKey(key)
-    aiVoices.setApiKey(key)
   }
 
   const handleVoiceChange = useCallback((mapKey: string, value: string) => {
@@ -76,7 +70,6 @@ export function VoiceSettings({ characterNames, selectedCharacter }: Props) {
         Voice Quality
       </h3>
 
-      {/* Toggle */}
       <div className="flex rounded-lg overflow-hidden border border-text-dim">
         <button
           onClick={() => handleTierChange('free')}
@@ -91,34 +84,22 @@ export function VoiceSettings({ characterNames, selectedCharacter }: Props) {
         </button>
         <button
           onClick={() => handleTierChange('premium')}
-          className={`flex-1 py-2 px-4 text-sm font-medium transition-colors ${
+          className={`flex-1 py-2 px-4 text-sm font-medium transition-colors relative ${
             tier === 'premium'
               ? 'bg-amber/20 text-amber border-l border-amber/30'
-              : 'bg-stage-card text-text-dim hover:text-text-secondary border-l border-text-dim'
+              : isPremium
+                ? 'bg-stage-card text-text-dim hover:text-text-secondary border-l border-text-dim'
+                : 'bg-stage-card text-text-dim border-l border-text-dim cursor-not-allowed opacity-50'
           }`}
+          disabled={!isPremium}
         >
           Premium
-          <span className="block text-[10px] mt-0.5 opacity-60">OpenAI TTS</span>
+          <span className="block text-[10px] mt-0.5 opacity-60">
+            {!user ? 'Sign in to unlock' : !isPremium ? 'Ask admin for access' : 'OpenAI TTS'}
+          </span>
         </button>
       </div>
 
-      {/* API key for premium */}
-      {tier === 'premium' && (
-        <div className="space-y-2">
-          <input
-            type="password"
-            value={apiKey}
-            onChange={e => handleApiKeyChange(e.target.value)}
-            placeholder="sk-... your OpenAI API key"
-            className="w-full bg-stage-elevated text-cream border border-text-dim rounded-lg px-3 py-2 text-sm focus:border-amber focus:outline-none placeholder:text-text-dim"
-          />
-          <p className="text-xs text-text-dim">
-            Stored locally. Never sent anywhere except OpenAI. ~$0.015 / 1k chars.
-          </p>
-        </div>
-      )}
-
-      {/* Voice assignments */}
       {voiceOptions.length > 0 && (
         <div className="space-y-2">
           <h4 className="font-[family-name:var(--font-display)] font-bold text-xs uppercase tracking-wider text-text-secondary">

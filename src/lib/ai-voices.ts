@@ -1,33 +1,18 @@
 import type { Character } from '@/types'
+import { supabase } from './supabase'
 
 export const OPENAI_VOICES = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'] as const
 
-let apiKey = ''
 let enabled = false
 let audioContext: AudioContext | null = null
 let characterVoiceMap: Record<string, string> = {}
-
-export function initAiVoices() {
-  if (typeof window === 'undefined') return
-  const savedKey = localStorage.getItem('lineReader_openaiKey')
-  if (savedKey) apiKey = savedKey
-}
-
-export function setApiKey(key: string) {
-  apiKey = key
-  localStorage.setItem('lineReader_openaiKey', key)
-}
-
-export function getApiKey() {
-  return apiKey
-}
 
 export function setEnabled(val: boolean) {
   enabled = val
 }
 
 export function isEnabled() {
-  return enabled && !!apiKey
+  return enabled
 }
 
 export function assignVoices(characters: Character[], userCharacter: string) {
@@ -49,8 +34,16 @@ export function setVoiceForCharacter(name: string, voice: string) {
   characterVoiceMap[name] = voice
 }
 
+async function getAuthToken(): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.getSession()
+  return session?.access_token ?? null
+}
+
 export async function speak(text: string, characterName: string): Promise<boolean> {
-  if (!isEnabled()) return false
+  if (!enabled) return false
+
+  const token = await getAuthToken()
+  if (!token) return false
 
   if (!audioContext) {
     audioContext = new AudioContext()
@@ -63,19 +56,13 @@ export async function speak(text: string, characterName: string): Promise<boolea
   const speed = isNarrator ? 0.9 : 1.0
 
   try {
-    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+    const response = await fetch('/api/tts', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        model: 'tts-1',
-        input: text,
-        voice,
-        speed,
-        response_format: 'mp3',
-      }),
+      body: JSON.stringify({ text, voice, speed }),
     })
 
     if (!response.ok) return false
