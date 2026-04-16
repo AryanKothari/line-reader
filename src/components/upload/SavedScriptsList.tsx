@@ -1,17 +1,24 @@
 'use client'
 
 import { getSavedScripts, deleteScript as removeScript } from '@/lib/storage'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 type Props = {
   onLoad: (name: string, script: import('@/types').ScriptEntry[]) => void
 }
 
 export function SavedScriptsList({ onLoad }: Props) {
-  const [scripts, setScripts] = useState(() => getSavedScripts())
+  const [scripts, setScripts] = useState<ReturnType<typeof getSavedScripts>>({})
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    setScripts(getSavedScripts())
+    setLoaded(true)
+  }, [])
+
   const names = Object.keys(scripts)
 
-  if (!names.length) return null
+  if (!loaded || !names.length) return null
 
   const handleDelete = (name: string) => {
     if (!confirm(`Delete "${name}"?`)) return
