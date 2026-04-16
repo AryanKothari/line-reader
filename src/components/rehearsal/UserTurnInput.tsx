@@ -50,9 +50,16 @@ export function UserTurnInput({ onCorrect }: Props) {
     <div className="mx-4 mb-4 p-4 bg-stage-card rounded-xl border border-text-dim/30">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm text-text-secondary">Your line — type or speak it</span>
-        <span className="text-xs text-text-dim">
-          {attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} left
-        </span>
+        <div className="flex gap-1">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                i < attemptsLeft ? 'bg-amber' : 'bg-text-dim/30'
+              }`}
+            />
+          ))}
+        </div>
       </div>
 
       {lastAttempt && (
@@ -79,9 +86,14 @@ export function UserTurnInput({ onCorrect }: Props) {
         </button>
       </form>
 
-      <div className="flex items-center gap-2 text-text-dim text-xs mt-2">
-        <div className="w-2 h-2 bg-text-dim rounded-full animate-pulse" />
-        Or speak the line out loud
+      <div className="flex items-center justify-between mt-2">
+        <div className="flex items-center gap-2 text-text-dim text-xs">
+          <div className="w-2 h-2 bg-text-dim rounded-full animate-pulse" />
+          Or speak the line out loud
+        </div>
+        <span className="text-[10px] text-text-dim">
+          Say &quot;line&quot; to reveal
+        </span>
       </div>
     </div>
   )
