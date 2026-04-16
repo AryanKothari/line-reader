@@ -73,6 +73,14 @@ export function useRehearsal() {
         if (finalText.trim()) currentSpeech += ' ' + finalText.trim()
         const allText = (currentSpeech + ' ' + interim).trim()
 
+        // "LINE" keyword — reveal immediately
+        if (allText.toLowerCase().trim() === 'line' && state.userTurnPhase === 'typing') {
+          if (speechTimeout) clearTimeout(speechTimeout)
+          currentSpeech = ''
+          useScriptStore.getState().revealLine()
+          return
+        }
+
         if (allText && fuzzyMatch(allText, expectedLine)) {
           if (speechTimeout) clearTimeout(speechTimeout)
           done()

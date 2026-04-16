@@ -115,6 +115,12 @@ export const useScriptStore = create<ScriptStore>((set, get) => ({
   startUserTurn: () => set({ userTurnPhase: 'typing', attemptsLeft: 3, lastAttempt: '' }),
 
   submitAttempt: (text: string) => {
+    // "LINE" keyword — reveal immediately
+    if (text.toLowerCase().trim() === 'line') {
+      set({ userTurnPhase: 'revealed', attemptsLeft: 0, lastAttempt: '' })
+      return false
+    }
+
     const { currentLineIndex, parsedScript, attemptsLeft } = get()
     const expected = parsedScript[currentLineIndex]?.line || ''
     const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim()
