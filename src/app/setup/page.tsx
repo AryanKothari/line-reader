@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useScriptStore } from '@/stores/script-store'
 import { Logo } from '@/components/shared/Logo'
@@ -14,10 +15,11 @@ export default function SetupPage() {
   const store = useScriptStore()
   const characterNames = store.characters.map(c => c.name)
 
-  if (!store.parsedScript.length) {
-    router.push('/')
-    return null
-  }
+  useEffect(() => {
+    if (!store.parsedScript.length) router.push('/')
+  }, [store.parsedScript.length, router])
+
+  if (!store.parsedScript.length) return null
 
   const handleStart = () => {
     if (!store.selectedCharacter) return

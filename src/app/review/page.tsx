@@ -1,12 +1,12 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useScriptStore } from '@/stores/script-store'
 import { Logo } from '@/components/shared/Logo'
 import { DragList } from '@/components/review/DragList'
 import { PdfPreview } from '@/components/review/PdfPreview'
 import { saveScript, exportScriptAsJson, importScriptFromJson } from '@/lib/storage'
-import { useRef } from 'react'
 
 export default function ReviewPage() {
   const router = useRouter()
@@ -19,10 +19,11 @@ export default function ReviewPage() {
       .map(e => e.character)
   )]
 
-  if (!store.parsedScript.length) {
-    router.push('/')
-    return null
-  }
+  useEffect(() => {
+    if (!store.parsedScript.length) router.push('/')
+  }, [store.parsedScript.length, router])
+
+  if (!store.parsedScript.length) return null
 
   const handleSave = () => {
     const name = prompt('Name this script:')
