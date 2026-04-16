@@ -1,6 +1,6 @@
 import type { Character } from '@/types'
 
-const OPENAI_VOICES = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'] as const
+export const OPENAI_VOICES = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'] as const
 
 let apiKey = ''
 let enabled = false
@@ -39,6 +39,14 @@ export function assignVoices(characters: Character[], userCharacter: string) {
     idx++
   }
   characterVoiceMap['__narrator__'] = 'onyx'
+}
+
+export function getCharacterVoiceMap() {
+  return characterVoiceMap
+}
+
+export function setVoiceForCharacter(name: string, voice: string) {
+  characterVoiceMap[name] = voice
 }
 
 export async function speak(text: string, characterName: string): Promise<boolean> {

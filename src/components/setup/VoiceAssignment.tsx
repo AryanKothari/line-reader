@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import * as synthesis from '@/lib/speech/synthesis'
+import * as aiVoices from '@/lib/ai-voices'
 
 type Props = {
   characterNames: string[]
@@ -9,43 +10,61 @@ type Props = {
 }
 
 export function VoiceAssignment({ characterNames, selectedCharacter }: Props) {
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
+  const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([])
   const [assignments, setAssignments] = useState<Record<string, string>>({})
+  const [aiEnabled, setAiEnabled] = useState(false)
+
+  // Poll AI enabled state (it's set from a sibling component)
+  useEffect(() => {
+    const interval = setInterval(() => setAiEnabled(aiVoices.isEnabled()), 500)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
-    const loadVoices = () => setVoices(synthesis.getEnglishVoices())
+    const loadVoices = () => setBrowserVoices(synthesis.getEnglishVoices())
     loadVoices()
     speechSynthesis.addEventListener('voiceschanged', loadVoices)
     return () => speechSynthesis.removeEventListener('voiceschanged', loadVoices)
   }, [])
 
-  // Sync from the voice map whenever voices load or character changes
+  // Sync assignments from the active voice map
   useEffect(() => {
-    const map = synthesis.getCharacterVoiceMap()
-    const a: Record<string, string> = {}
-    for (const [key, voice] of Object.entries(map)) {
-      a[key] = voice.name
+    if (aiEnabled) {
+      const map = aiVoices.getCharacterVoiceMap()
+      const a: Record<string, string> = {}
+      for (const [key, voice] of Object.entries(map)) a[key] = voice
+      setAssignments(a)
+    } else {
+      const map = synthesis.getCharacterVoiceMap()
+      const a: Record<string, string> = {}
+      for (const [key, voice] of Object.entries(map)) a[key] = voice.name
+      setAssignments(a)
     }
-    setAssignments(a)
-  }, [voices, selectedCharacter])
+  }, [browserVoices, selectedCharacter, aiEnabled])
 
-  const handleChange = useCallback((mapKey: string, voiceName: string) => {
-    const voice = voices.find(v => v.name === voiceName)
-    if (voice) {
-      synthesis.setVoiceForCharacter(mapKey, voice)
-      setAssignments(prev => ({ ...prev, [mapKey]: voiceName }))
+  const handleChange = useCallback((mapKey: string, value: string) => {
+    if (aiEnabled) {
+      aiVoices.setVoiceForCharacter(mapKey, value)
+    } else {
+      const voice = browserVoices.find(v => v.name === value)
+      if (voice) synthesis.setVoiceForCharacter(mapKey, voice)
     }
-  }, [voices])
+    setAssignments(prev => ({ ...prev, [mapKey]: value }))
+  }, [aiEnabled, browserVoices])
 
   const otherChars = characterNames.filter(n => n !== selectedCharacter)
   const entries = [...otherChars, 'Narrator']
 
-  if (!voices.length) return null
+  const voiceOptions = aiEnabled
+    ? aiVoices.OPENAI_VOICES.map(v => ({ value: v, label: v.charAt(0).toUpperCase() + v.slice(1) }))
+    : browserVoices.map(v => ({ value: v.name, label: v.name }))
+
+  if (!voiceOptions.length) return null
 
   return (
     <div className="space-y-2">
-      <h3 className="font-[family-name:var(--font-display)] font-bold text-sm uppercase tracking-wider text-text-secondary">
-        Voice Assignments
+      <h3 className="font-[family-name:var(--font-display)] font-bold text-xs uppercase tracking-wider text-text-secondary">
+        Voice Assignments {aiEnabled && <span className="text-amber">(AI)</span>}
       </h3>
       {entries.map(name => {
         const mapKey = name === 'Narrator' ? '__narrator__' : name
@@ -57,8 +76,8 @@ export function VoiceAssignment({ characterNames, selectedCharacter }: Props) {
               onChange={(e) => handleChange(mapKey, e.target.value)}
               className="bg-stage-elevated text-text-primary border border-text-dim rounded px-2 py-1 text-sm focus:border-amber focus:outline-none max-w-[200px]"
             >
-              {voices.map(v => (
-                <option key={v.name} value={v.name}>{v.name}</option>
+              {voiceOptions.map(v => (
+                <option key={v.value} value={v.value}>{v.label}</option>
               ))}
             </select>
           </div>
