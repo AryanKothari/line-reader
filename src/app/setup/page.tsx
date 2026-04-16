@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useScriptStore } from '@/stores/script-store'
 import { Logo } from '@/components/shared/Logo'
 import { CharacterCard } from '@/components/setup/CharacterCard'
-import { VoiceAssignment } from '@/components/setup/VoiceAssignment'
-import { AiVoiceSettings } from '@/components/setup/AiVoiceSettings'
+import { VoiceSettings } from '@/components/setup/VoiceSettings'
 import * as synthesis from '@/lib/speech/synthesis'
 import * as aiVoices from '@/lib/ai-voices'
 
@@ -70,14 +69,10 @@ export default function SetupPage() {
         </div>
 
         {store.selectedCharacter && (
-          <div className="mb-8">
-            <VoiceAssignment characterNames={characterNames} selectedCharacter={store.selectedCharacter} />
+          <div className="mb-8 p-4 bg-stage-card rounded-xl">
+            <VoiceSettings characterNames={characterNames} selectedCharacter={store.selectedCharacter} />
           </div>
         )}
-
-        <div className="mb-8 p-4 bg-stage-card rounded-xl">
-          <AiVoiceSettings />
-        </div>
 
         <button
           onClick={handleStart}
