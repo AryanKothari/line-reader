@@ -2,15 +2,45 @@ import { cleanOcrText } from './ocr-cleanup'
 
 type StatusCallback = (msg: string) => void
 
+const PDF_JS_VERSION = '3.11.174'
+const CDN = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDF_JS_VERSION}`
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let pdfjsLib: any = null
+
+async function loadPdfJs() {
+  if (pdfjsLib) return pdfjsLib
+  if (typeof window === 'undefined') throw new Error('pdf.js requires a browser')
+
+  // Check if already loaded via script tag
+  if ((window as any).pdfjsLib) {
+    pdfjsLib = (window as any).pdfjsLib
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `${CDN}/pdf.worker.min.js`
+    return pdfjsLib
+  }
+
+  // Load from CDN
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = `${CDN}/pdf.min.js`
+    script.onload = () => {
+      pdfjsLib = (window as any).pdfjsLib
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `${CDN}/pdf.worker.min.js`
+      resolve(pdfjsLib)
+    }
+    script.onerror = () => reject(new Error('Failed to load pdf.js'))
+    document.head.appendChild(script)
+  })
+}
+
 export async function extractTextFromPdf(
   file: File,
   onStatus?: StatusCallback
 ): Promise<string> {
-  const pdfjsLib = await import('pdfjs-dist')
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+  const pdfjs = await loadPdfJs()
 
   const arrayBuffer = await file.arrayBuffer()
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+  const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise
   const pages: string[] = []
   let totalChars = 0
 
@@ -52,10 +82,8 @@ async function ocrCanvas(canvas: HTMLCanvasElement): Promise<string> {
   return text
 }
 
-async function extractTextWithOcr(
-  pdf: import('pdfjs-dist').PDFDocumentProxy,
-  onStatus?: StatusCallback
-): Promise<string> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function extractTextWithOcr(pdf: any, onStatus?: StatusCallback): Promise<string> {
   onStatus?.('Scanned PDF detected — running OCR (this may take a moment)...')
 
   const canvas = document.createElement('canvas')
@@ -69,8 +97,7 @@ async function extractTextWithOcr(
     const viewport = page.getViewport({ scale })
     canvas.width = viewport.width
     canvas.height = viewport.height
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (page as any).render({ canvasContext: ctx, viewport }).promise
+    await page.render({ canvasContext: ctx, viewport }).promise
 
     if (canvas.width > canvas.height * 1.4) {
       const half = Math.floor(canvas.width / 2)
@@ -96,11 +123,10 @@ async function extractTextWithOcr(
 }
 
 export async function renderPdfPages(file: File): Promise<string[]> {
-  const pdfjsLib = await import('pdfjs-dist')
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+  const pdfjs = await loadPdfJs()
 
   const arrayBuffer = await file.arrayBuffer()
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+  const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise
   const dataUrls: string[] = []
 
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -109,8 +135,7 @@ export async function renderPdfPages(file: File): Promise<string[]> {
     const canvas = document.createElement('canvas')
     canvas.width = viewport.width
     canvas.height = viewport.height
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (page as any).render({ canvasContext: canvas.getContext('2d')!, viewport }).promise
+    await page.render({ canvasContext: canvas.getContext('2d')!, viewport }).promise
     dataUrls.push(canvas.toDataURL())
   }
 
