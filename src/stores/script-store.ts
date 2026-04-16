@@ -3,6 +3,8 @@ import type { ScriptEntry, Character } from '@/types'
 import { extractCharacters } from '@/lib/parser/script-parser'
 
 interface ScriptStore {
+  projectId: string | null
+  projectTitle: string | null
   parsedScript: ScriptEntry[]
   characters: Character[]
   selectedCharacter: string | null
@@ -20,6 +22,7 @@ interface ScriptStore {
   lastAttempt: string
 
   // Actions
+  setProject: (id: string | null, title: string | null) => void
   setParsedScript: (entries: ScriptEntry[]) => void
   setUploadedFile: (file: File | null) => void
   updateLine: (index: number, line: string) => void
@@ -49,6 +52,8 @@ interface ScriptStore {
 }
 
 export const useScriptStore = create<ScriptStore>((set, get) => ({
+  projectId: null,
+  projectTitle: null,
   parsedScript: [],
   characters: [],
   selectedCharacter: null,
@@ -60,6 +65,8 @@ export const useScriptStore = create<ScriptStore>((set, get) => ({
   userTurnPhase: null,
   attemptsLeft: 3,
   lastAttempt: '',
+
+  setProject: (id, title) => set({ projectId: id, projectTitle: title }),
 
   setParsedScript: (entries) => {
     const characters = extractCharacters(entries)
@@ -154,6 +161,8 @@ export const useScriptStore = create<ScriptStore>((set, get) => ({
   toggleMode: () => set(state => ({ practiceMode: !state.practiceMode })),
   reset: () =>
     set({
+      projectId: null,
+      projectTitle: null,
       parsedScript: [],
       characters: [],
       selectedCharacter: null,

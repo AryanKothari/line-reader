@@ -6,15 +6,17 @@ import { Logo } from '@/components/shared/Logo'
 import { AuthButton } from '@/components/shared/AuthButton'
 import { DropZone } from '@/components/upload/DropZone'
 import { SavedScriptsList } from '@/components/upload/SavedScriptsList'
+import { ProjectsList } from '@/components/upload/ProjectsList'
 import { useScriptStore } from '@/stores/script-store'
 import { useAuth } from '@/lib/auth-context'
 import { extractTextFromPdf } from '@/lib/parser/pdf-extract'
 import { parseFromText } from '@/lib/parser/script-parser'
+import type { Project } from '@/lib/projects'
 import type { ScriptEntry } from '@/types'
 
 export default function UploadPage() {
   const router = useRouter()
-  const { setParsedScript, setUploadedFile } = useScriptStore()
+  const store = useScriptStore()
   const { isPremium, user } = useAuth()
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -22,7 +24,8 @@ export default function UploadPage() {
   const handleFile = async (file: File) => {
     setStatus('Reading your script...')
     setError(null)
-    setUploadedFile(file)
+    store.setUploadedFile(file)
+    store.setProject(null, null) // new upload = no project yet
 
     try {
       let rawText: string
@@ -39,7 +42,7 @@ export default function UploadPage() {
         return
       }
 
-      setParsedScript(result.script)
+      store.setParsedScript(result.script)
       setStatus(null)
       router.push('/review')
     } catch (err) {
@@ -49,8 +52,16 @@ export default function UploadPage() {
     }
   }
 
+  const handleLoadProject = (project: Project) => {
+    store.setProject(project.id, project.title)
+    store.setParsedScript(project.entries)
+    if (project.selected_character) store.selectCharacter(project.selected_character)
+    router.push('/review')
+  }
+
   const handleLoadSaved = (_name: string, script: ScriptEntry[]) => {
-    setParsedScript(script)
+    store.setProject(null, null)
+    store.setParsedScript(script)
     router.push('/review')
   }
 
@@ -77,7 +88,11 @@ export default function UploadPage() {
           </div>
         )}
 
-        <SavedScriptsList onLoad={handleLoadSaved} />
+        {user ? (
+          <ProjectsList onLoad={handleLoadProject} />
+        ) : (
+          <SavedScriptsList onLoad={handleLoadSaved} />
+        )}
       </div>
     </div>
   )
