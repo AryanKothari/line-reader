@@ -1,19 +1,17 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useScriptStore } from '@/stores/script-store'
 import { Logo } from '@/components/shared/Logo'
 import { SaveButton } from '@/components/shared/SaveButton'
 import { DragList } from '@/components/review/DragList'
 import { PdfPreview } from '@/components/review/PdfPreview'
-import { exportScriptAsJson, importScriptFromJson } from '@/lib/storage'
+import { exportScriptAsJson } from '@/lib/storage'
 
 export default function ReviewPage() {
   const router = useRouter()
   const store = useScriptStore()
-  const importRef = useRef<HTMLInputElement>(null)
-
   const characterNames = [...new Set(
     store.parsedScript
       .filter(e => e.character !== 'STAGE DIRECTION')
@@ -26,14 +24,6 @@ export default function ReviewPage() {
 
   if (!store.parsedScript.length) return null
 
-  const handleImport = async (file: File) => {
-    try {
-      const entries = await importScriptFromJson(file)
-      store.setParsedScript(entries)
-    } catch {
-      alert('Invalid JSON file.')
-    }
-  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -80,14 +70,10 @@ export default function ReviewPage() {
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-3 mt-4">
+        <div className="flex items-center justify-center mt-4">
           <button onClick={() => exportScriptAsJson(store.parsedScript)} className="px-4 py-2 bg-stage-card border border-text-dim rounded-lg text-text-secondary text-sm hover:border-amber hover:text-amber transition-all">
-            Export JSON
+            Download JSON
           </button>
-          <button onClick={() => importRef.current?.click()} className="px-4 py-2 bg-stage-card border border-text-dim rounded-lg text-text-secondary text-sm hover:border-amber hover:text-amber transition-all">
-            Import JSON
-          </button>
-          <input ref={importRef} type="file" accept=".json" className="hidden" onChange={(e) => { if (e.target.files?.[0]) handleImport(e.target.files[0]); e.target.value = '' }} />
         </div>
 
         <button

@@ -42,11 +42,11 @@ export function DropZone({ onFile, status, error }: Props) {
           <path d="M24 32V8M24 8L16 16M24 8L32 16" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         <p className="text-lg text-cream mb-1">Drop your script here</p>
-        <p className="text-sm text-text-secondary">PDF format &middot; 2-3 character scripts work best</p>
+        <p className="text-sm text-text-secondary">PDF, TXT, or JSON &middot; 2-3 character scripts work best</p>
         <input
           ref={inputRef}
           type="file"
-          accept=".pdf,.txt"
+          accept=".pdf,.txt,.json"
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0]

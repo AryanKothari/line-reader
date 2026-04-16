@@ -28,6 +28,21 @@ export default function UploadPage() {
     store.setProject(null, null) // new upload = no project yet
 
     try {
+      // JSON files are already parsed script entries
+      if (file.name.endsWith('.json') || file.type === 'application/json') {
+        const text = await file.text()
+        const entries = JSON.parse(text)
+        if (!Array.isArray(entries) || !entries.length || !entries[0].character) {
+          setStatus(null)
+          setError('Invalid JSON format. Expected an array of script entries.')
+          return
+        }
+        store.setParsedScript(entries)
+        setStatus(null)
+        router.push('/review')
+        return
+      }
+
       let rawText: string
       if (file.type === 'application/pdf') {
         rawText = await extractTextFromPdf(file, setStatus)
