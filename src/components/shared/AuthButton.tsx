@@ -15,19 +15,21 @@ export function AuthButton() {
   if (loading) return null
 
   if (user) {
+    const displayName = profile?.display_name || user.email?.split('@')[0] || 'User'
     return (
-      <div className="flex items-center gap-2">
-        {isPremium && (
-          <span className="text-[10px] uppercase tracking-wider text-amber bg-amber/15 px-2 py-0.5 rounded-full">
-            Premium
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-amber/20 text-amber flex items-center justify-center text-sm font-bold flex-shrink-0">
+          {displayName.charAt(0).toUpperCase()}
+        </div>
+        <div className="flex flex-col items-start">
+          <span className="text-sm text-cream leading-tight">{displayName}</span>
+          <span className={`text-[10px] uppercase tracking-wider leading-tight ${isPremium ? 'text-amber' : 'text-text-dim'}`}>
+            {isPremium ? 'Premium' : 'Basic'}
           </span>
-        )}
-        <div className="w-8 h-8 rounded-full bg-amber/20 text-amber flex items-center justify-center text-sm font-bold">
-          {(profile?.display_name || user.email || '?').charAt(0).toUpperCase()}
         </div>
         <button
           onClick={signOut}
-          className="text-xs text-text-dim hover:text-text-secondary transition-colors"
+          className="text-xs text-text-dim hover:text-text-secondary transition-colors ml-1"
         >
           Sign out
         </button>
