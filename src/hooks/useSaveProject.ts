@@ -10,25 +10,29 @@ export function useSaveProject() {
   const store = useScriptStore()
   const { user } = useAuth()
   const [saving, setSaving] = useState(false)
+  const [showNameModal, setShowNameModal] = useState(false)
 
-  const save = useCallback(async () => {
+  const save = useCallback(async (title?: string) => {
     if (!store.parsedScript.length) return
 
-    const title = store.projectTitle || prompt('Name this project:')
-    if (!title) return
-    setSaving(true)
+    const finalTitle = title || store.projectTitle
+    if (!finalTitle) {
+      setShowNameModal(true)
+      return
+    }
 
+    setSaving(true)
     try {
       if (user) {
         const project = await saveProject({
           id: store.projectId || undefined,
-          title,
+          title: finalTitle,
           entries: store.parsedScript,
           selected_character: store.selectedCharacter,
         })
         store.setProject(project.id, project.title)
       } else {
-        saveToLocal(title, store.parsedScript)
+        saveToLocal(finalTitle, store.parsedScript)
       }
     } catch (err) {
       console.error('Save error:', err)
@@ -38,5 +42,7 @@ export function useSaveProject() {
     }
   }, [store, user])
 
-  return { save, saving }
+  const dismissModal = useCallback(() => setShowNameModal(false), [])
+
+  return { save, saving, showNameModal, dismissModal }
 }
