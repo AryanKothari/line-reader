@@ -2,6 +2,16 @@ import type { Character } from '@/types'
 
 let characterVoiceMap: Record<string, SpeechSynthesisVoice> = {}
 
+function ensureVoicesLoaded(): Promise<SpeechSynthesisVoice[]> {
+  return new Promise(resolve => {
+    const voices = speechSynthesis.getVoices()
+    if (voices.length) return resolve(voices)
+    speechSynthesis.addEventListener('voiceschanged', () => {
+      resolve(speechSynthesis.getVoices())
+    }, { once: true })
+  })
+}
+
 export function getVoices(): SpeechSynthesisVoice[] {
   return speechSynthesis.getVoices()
 }
@@ -36,17 +46,25 @@ export function getCharacterVoiceMap() {
   return characterVoiceMap
 }
 
-export function speak(text: string, characterName: string): Promise<void> {
+export async function speak(text: string, characterName: string): Promise<void> {
+  // Ensure voices are loaded (Chrome loads them async)
+  const allVoices = await ensureVoicesLoaded()
+
   return new Promise(resolve => {
     speechSynthesis.cancel()
+
     const utterance = new SpeechSynthesisUtterance(text)
 
     const isNarrator = characterName === 'STAGE DIRECTION' || characterName === '__narrator__'
-    const voice = isNarrator
+    const savedVoice = isNarrator
       ? characterVoiceMap['__narrator__']
       : characterVoiceMap[characterName]
 
-    if (voice) utterance.voice = voice
+    // Get a fresh reference from the current voice list to ensure it applies
+    if (savedVoice) {
+      const freshVoice = allVoices.find(v => v.name === savedVoice.name)
+      if (freshVoice) utterance.voice = freshVoice
+    }
 
     if (isNarrator) {
       utterance.rate = 0.85
@@ -60,7 +78,10 @@ export function speak(text: string, characterName: string): Promise<void> {
 
     utterance.onend = () => resolve()
     utterance.onerror = () => resolve()
-    speechSynthesis.speak(utterance)
+
+    // Small delay after cancel to work around Chrome/Safari bug
+    // where voice assignment is ignored if speak is called immediately after cancel
+    setTimeout(() => speechSynthesis.speak(utterance), 50)
   })
 }
 

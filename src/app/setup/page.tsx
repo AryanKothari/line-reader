@@ -53,7 +53,10 @@ export default function SetupPage() {
               selected={store.selectedCharacter === c.name}
               onSelect={() => {
                 store.selectCharacter(c.name)
-                synthesis.assignVoices(store.characters, c.name)
+                // Only assign default voices if none exist yet
+                if (!Object.keys(synthesis.getCharacterVoiceMap()).length) {
+                  synthesis.assignVoices(store.characters, c.name)
+                }
               }}
             />
           ))}
