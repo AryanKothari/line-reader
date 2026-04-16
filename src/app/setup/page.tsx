@@ -5,7 +5,9 @@ import { useScriptStore } from '@/stores/script-store'
 import { Logo } from '@/components/shared/Logo'
 import { CharacterCard } from '@/components/setup/CharacterCard'
 import { VoiceAssignment } from '@/components/setup/VoiceAssignment'
+import { AiVoiceSettings } from '@/components/setup/AiVoiceSettings'
 import * as synthesis from '@/lib/speech/synthesis'
+import * as aiVoices from '@/lib/ai-voices'
 
 export default function SetupPage() {
   const router = useRouter()
@@ -21,6 +23,9 @@ export default function SetupPage() {
     if (!store.selectedCharacter) return
     if (!Object.keys(synthesis.getCharacterVoiceMap()).length) {
       synthesis.assignVoices(store.characters, store.selectedCharacter)
+    }
+    if (aiVoices.isEnabled()) {
+      aiVoices.assignVoices(store.characters, store.selectedCharacter)
     }
     router.push('/rehearsal')
   }
@@ -67,6 +72,10 @@ export default function SetupPage() {
             <VoiceAssignment characterNames={characterNames} selectedCharacter={store.selectedCharacter} />
           </div>
         )}
+
+        <div className="mb-8 p-4 bg-stage-card rounded-xl">
+          <AiVoiceSettings />
+        </div>
 
         <button
           onClick={handleStart}
