@@ -21,6 +21,12 @@ interface ScriptStore {
   attemptsLeft: number
   lastAttempt: string
 
+  // Performance tracking
+  linesNailedFirstTry: number
+  linesRevealed: number
+  linesSkipped: number
+  totalUserLines: number
+
   // Actions
   setProject: (id: string | null, title: string | null) => void
   setParsedScript: (entries: ScriptEntry[]) => void
@@ -38,6 +44,8 @@ interface ScriptStore {
   submitAttempt: (text: string) => boolean  // returns true if correct
   revealLine: () => void
   clearUserTurn: () => void
+  recordLineResult: (result: 'first-try' | 'revealed' | 'skipped' | 'completed') => void
+  resetPerformance: () => void
 
   // Rehearsal actions
   setCurrentLineIndex: (index: number) => void
@@ -65,6 +73,10 @@ export const useScriptStore = create<ScriptStore>((set, get) => ({
   userTurnPhase: null,
   attemptsLeft: 3,
   lastAttempt: '',
+  linesNailedFirstTry: 0,
+  linesRevealed: 0,
+  linesSkipped: 0,
+  totalUserLines: 0,
 
   setProject: (id, title) => set({ projectId: id, projectTitle: title }),
 
@@ -151,6 +163,21 @@ export const useScriptStore = create<ScriptStore>((set, get) => ({
 
   clearUserTurn: () => set({ userTurnPhase: null, attemptsLeft: 3, lastAttempt: '' }),
 
+  recordLineResult: (result) => set(state => {
+    switch (result) {
+      case 'first-try':
+        return { linesNailedFirstTry: state.linesNailedFirstTry + 1, totalUserLines: state.totalUserLines + 1 }
+      case 'revealed':
+        return { linesRevealed: state.linesRevealed + 1, totalUserLines: state.totalUserLines + 1 }
+      case 'skipped':
+        return { linesSkipped: state.linesSkipped + 1, totalUserLines: state.totalUserLines + 1 }
+      case 'completed':
+        return { totalUserLines: state.totalUserLines + 1 }
+    }
+  }),
+
+  resetPerformance: () => set({ linesNailedFirstTry: 0, linesRevealed: 0, linesSkipped: 0, totalUserLines: 0 }),
+
   setCurrentLineIndex: (index) => set({ currentLineIndex: index, userTurnPhase: null, attemptsLeft: 3, lastAttempt: '' }),
   advanceLine: () => set(state => ({ currentLineIndex: state.currentLineIndex + 1 })),
   goBack: () => set(state => ({ currentLineIndex: Math.max(0, state.currentLineIndex - 1) })),
@@ -174,5 +201,9 @@ export const useScriptStore = create<ScriptStore>((set, get) => ({
       userTurnPhase: null,
       attemptsLeft: 3,
       lastAttempt: '',
+      linesNailedFirstTry: 0,
+      linesRevealed: 0,
+      linesSkipped: 0,
+      totalUserLines: 0,
     }),
 }))

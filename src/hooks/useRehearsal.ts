@@ -30,6 +30,15 @@ export function useRehearsal() {
       // User's turn — show typing input, listen for speech
       useScriptStore.getState().startUserTurn()
       await waitForUserTurn(entry.line)
+      const state = useScriptStore.getState()
+      // Track performance before clearing
+      if (state.attemptsLeft === 3) {
+        state.recordLineResult('first-try')
+      } else if (state.userTurnPhase === 'revealed') {
+        state.recordLineResult('revealed')
+      } else {
+        state.recordLineResult('completed')
+      }
       useScriptStore.getState().clearUserTurn()
       if (!runningRef.current || useScriptStore.getState().isPaused) return
       await delay(400)
@@ -132,6 +141,10 @@ export function useRehearsal() {
 
   const manualAdvance = useCallback(() => {
     if (resolveRef.current) {
+      const state = useScriptStore.getState()
+      if (state.userTurnPhase) {
+        state.recordLineResult('skipped')
+      }
       resolveRef.current()
       resolveRef.current = null
       return
@@ -173,6 +186,7 @@ export function useRehearsal() {
     recognition.stopListening()
     resolveRef.current = null
     useScriptStore.getState().clearUserTurn()
+    useScriptStore.getState().resetPerformance()
     useScriptStore.getState().resume()
     processLine(0)
   }, [processLine])
