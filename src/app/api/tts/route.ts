@@ -59,7 +59,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
   }
 
-  const { text, voice, speed } = await req.json()
+  const { text, voice, speed, instructions } = await req.json()
+
+  const useExpressiveModel = !!instructions
+  const model = useExpressiveModel ? 'gpt-4o-mini-tts' : 'tts-1'
+
+  const body: Record<string, unknown> = {
+    model,
+    input: text,
+    voice: voice || 'alloy',
+    response_format: 'mp3',
+  }
+
+  if (useExpressiveModel && instructions) {
+    body.instructions = instructions
+  } else {
+    body.speed = speed || 1.0
+  }
 
   const response = await fetch('https://api.openai.com/v1/audio/speech', {
     method: 'POST',
@@ -67,13 +83,7 @@ export async function POST(req: NextRequest) {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model: 'tts-1',
-      input: text,
-      voice: voice || 'alloy',
-      speed: speed || 1.0,
-      response_format: 'mp3',
-    }),
+    body: JSON.stringify(body),
   })
 
   if (!response.ok) {

@@ -9,6 +9,7 @@ interface ScriptStore {
   characters: Character[]
   selectedCharacter: string | null
   uploadedFile: File | null
+  sceneNotes: string
 
   // Rehearsal state
   currentLineIndex: number
@@ -38,6 +39,7 @@ interface ScriptStore {
   updateCharacter: (index: number, character: string) => void
   selectCharacter: (name: string) => void
   refreshCharacters: () => void
+  setSceneNotes: (notes: string) => void
 
   // User turn actions
   startUserTurn: () => void
@@ -66,6 +68,7 @@ export const useScriptStore = create<ScriptStore>((set, get) => ({
   characters: [],
   selectedCharacter: null,
   uploadedFile: null,
+  sceneNotes: '',
   currentLineIndex: -1,
   isPaused: false,
   isRunning: false,
@@ -127,6 +130,8 @@ export const useScriptStore = create<ScriptStore>((set, get) => ({
     }),
 
   selectCharacter: (name) => set({ selectedCharacter: name }),
+
+  setSceneNotes: (notes) => set({ sceneNotes: notes }),
 
   refreshCharacters: () =>
     set(state => ({ characters: extractCharacters(state.parsedScript) })),
@@ -194,6 +199,7 @@ export const useScriptStore = create<ScriptStore>((set, get) => ({
       characters: [],
       selectedCharacter: null,
       uploadedFile: null,
+      sceneNotes: '',
       currentLineIndex: -1,
       isPaused: false,
       isRunning: false,

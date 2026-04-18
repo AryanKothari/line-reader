@@ -39,7 +39,7 @@ async function getAuthToken(): Promise<string | null> {
   return session?.access_token ?? null
 }
 
-export async function speak(text: string, characterName: string): Promise<boolean> {
+export async function speak(text: string, characterName: string, sceneNotes?: string): Promise<boolean> {
   if (!enabled) return false
 
   const token = await getAuthToken()
@@ -55,6 +55,13 @@ export async function speak(text: string, characterName: string): Promise<boolea
     : characterVoiceMap[characterName] || 'alloy'
   const speed = isNarrator ? 0.9 : 1.0
 
+  let instructions: string | undefined
+  if (sceneNotes?.trim()) {
+    instructions = isNarrator
+      ? `You are reading stage directions for a scene. Context: ${sceneNotes}`
+      : `You are reading the lines of the character "${characterName}". Deliver with appropriate emotion and tone. Context: ${sceneNotes}`
+  }
+
   try {
     const response = await fetch('/api/tts', {
       method: 'POST',
@@ -62,7 +69,7 @@ export async function speak(text: string, characterName: string): Promise<boolea
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ text, voice, speed }),
+      body: JSON.stringify({ text, voice, speed, instructions }),
     })
 
     if (!response.ok) return false

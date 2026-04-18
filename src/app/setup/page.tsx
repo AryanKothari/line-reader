@@ -73,9 +73,24 @@ export default function SetupPage() {
         </div>
 
         {store.selectedCharacter && (
-          <div className="mb-8 p-4 bg-stage-card rounded-xl">
-            <VoiceSettings characterNames={characterNames} selectedCharacter={store.selectedCharacter} />
-          </div>
+          <>
+            <div className="mb-4 p-4 bg-stage-card rounded-xl">
+              <VoiceSettings characterNames={characterNames} selectedCharacter={store.selectedCharacter} />
+            </div>
+
+            <div className="mb-8 p-4 bg-stage-card rounded-xl">
+              <h3 className="font-[family-name:var(--font-display)] font-bold text-sm text-cream mb-1">Scene Notes</h3>
+              <p className="text-text-dim text-xs mb-3">Give context so AI voices read with the right tone and emotion</p>
+              <textarea
+                value={store.sceneNotes}
+                onChange={e => store.setSceneNotes(e.target.value)}
+                placeholder="e.g. Late night at a bar. Two old friends just had a heated argument about money. The tension is thick but there's underlying love..."
+                rows={3}
+                className="w-full bg-stage-elevated text-cream border border-text-dim rounded-lg px-3 py-2 text-sm focus:border-amber focus:outline-none placeholder:text-text-dim resize-none"
+              />
+              <p className="text-text-dim text-[10px] mt-1">Works with AI voices only</p>
+            </div>
+          </>
         )}
 
         <button

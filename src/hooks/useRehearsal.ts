@@ -47,7 +47,8 @@ export function useRehearsal() {
       // Other character or direction — speak
       let spoken = false
       if (aiVoices.isEnabled()) {
-        spoken = await aiVoices.speak(entry.line, entry.character)
+        const notes = useScriptStore.getState().sceneNotes
+        spoken = await aiVoices.speak(entry.line, entry.character, notes || undefined)
       }
       if (!spoken) {
         await synthesis.speak(entry.line, entry.character)
