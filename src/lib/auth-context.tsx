@@ -69,7 +69,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password })
+    const { data, error } = await supabase.auth.signUp({ email, password })
+    if (!error && data.session) {
+      // Initialize profile with premium access
+      await fetch('/api/init-profile', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${data.session.access_token}` },
+      })
+    }
     return { error: error?.message ?? null }
   }
 

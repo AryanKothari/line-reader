@@ -2,18 +2,31 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 const rateLimitMap = new Map<string, { count: number; reset: number }>()
-const RATE_LIMIT = 30
+const dailyLimitMap = new Map<string, { count: number; reset: number }>()
+const RATE_LIMIT = 20             // per hour
 const RATE_WINDOW = 60 * 60 * 1000
+const DAILY_LIMIT = 50            // per day
+const DAILY_WINDOW = 24 * 60 * 60 * 1000
 
 function checkRateLimit(userId: string): boolean {
   const now = Date.now()
-  const entry = rateLimitMap.get(userId)
-  if (!entry || now > entry.reset) {
+
+  const hourly = rateLimitMap.get(userId)
+  if (!hourly || now > hourly.reset) {
     rateLimitMap.set(userId, { count: 1, reset: now + RATE_WINDOW })
-    return true
+  } else {
+    if (hourly.count >= RATE_LIMIT) return false
+    hourly.count++
   }
-  if (entry.count >= RATE_LIMIT) return false
-  entry.count++
+
+  const daily = dailyLimitMap.get(userId)
+  if (!daily || now > daily.reset) {
+    dailyLimitMap.set(userId, { count: 1, reset: now + DAILY_WINDOW })
+  } else {
+    if (daily.count >= DAILY_LIMIT) return false
+    daily.count++
+  }
+
   return true
 }
 
