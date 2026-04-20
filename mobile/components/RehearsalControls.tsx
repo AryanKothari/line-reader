@@ -1,4 +1,5 @@
 import { View, Pressable, Text, StyleSheet } from 'react-native'
+import * as haptics from '../lib/haptics'
 import { colors, spacing } from '../theme'
 
 type Props = {
@@ -20,7 +21,7 @@ export function RehearsalControls({
   if (!isRunning && !isPaused) {
     return (
       <View style={styles.container}>
-        <Pressable style={styles.startButton} onPress={onStart}>
+        <Pressable style={styles.startButton} onPress={() => { haptics.mediumTap(); onStart() }}>
           <Text style={styles.startButtonText}>Begin Rehearsal</Text>
         </Pressable>
       </View>
@@ -30,21 +31,21 @@ export function RehearsalControls({
   return (
     <View style={styles.container}>
       <View style={styles.row}>
-        <Pressable style={styles.iconButton} onPress={onGoBack}>
+        <Pressable style={styles.iconButton} onPress={() => { haptics.lightTap(); onGoBack() }}>
           <Text style={styles.iconText}>◀</Text>
         </Pressable>
 
         {isPaused ? (
-          <Pressable style={styles.playButton} onPress={onResume}>
+          <Pressable style={styles.playButton} onPress={() => { haptics.mediumTap(); onResume() }}>
             <Text style={styles.playText}>▶</Text>
           </Pressable>
         ) : (
-          <Pressable style={styles.playButton} onPress={onPause}>
+          <Pressable style={styles.playButton} onPress={() => { haptics.mediumTap(); onPause() }}>
             <Text style={styles.playText}>⏸</Text>
           </Pressable>
         )}
 
-        <Pressable style={styles.iconButton} onPress={onAdvance}>
+        <Pressable style={styles.iconButton} onPress={() => { haptics.lightTap(); onAdvance() }}>
           <Text style={styles.iconText}>▶</Text>
         </Pressable>
       </View>

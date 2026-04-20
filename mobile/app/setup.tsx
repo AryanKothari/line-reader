@@ -1,17 +1,35 @@
-import { useState } from 'react'
-import { View, Text, StyleSheet, FlatList, Pressable, TextInput } from 'react-native'
+import { useState, useEffect } from 'react'
+import { View, Text, StyleSheet, FlatList, Pressable, TextInput, Switch } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useScriptStore } from '@line-reader/shared'
+import { useAuth } from '../lib/auth-context'
+import * as aiVoices from '../lib/ai-voices'
+import * as synthesis from '../lib/speech/synthesis'
 import { colors, spacing } from '../theme'
 
 export default function SetupScreen() {
   const router = useRouter()
+  const { isPremium } = useAuth()
   const {
     characters, selectedCharacter, selectCharacter,
     sceneNotes, setSceneNotes,
   } = useScriptStore()
   const [showNotes, setShowNotes] = useState(false)
+  const [useAiVoices, setUseAiVoices] = useState(false)
+
+  useEffect(() => {
+    synthesis.assignVoices(characters)
+  }, [characters])
+
+  useEffect(() => {
+    aiVoices.setEnabled(useAiVoices)
+    if (useAiVoices) {
+      aiVoices.autoAssignVoices(
+        characters.filter(c => c.name !== selectedCharacter).map(c => c.name)
+      )
+    }
+  }, [useAiVoices, characters, selectedCharacter])
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -22,27 +40,46 @@ export default function SetupScreen() {
         keyExtractor={(item) => item.name}
         contentContainerStyle={styles.list}
         ListFooterComponent={
-          <View style={styles.notesSection}>
-            <Pressable
-              style={styles.notesToggle}
-              onPress={() => setShowNotes(!showNotes)}
-            >
-              <Text style={styles.notesToggleText}>
-                Scene Notes {showNotes ? '▲' : '▼'}
-              </Text>
-            </Pressable>
-            {showNotes && (
-              <TextInput
-                style={styles.notesInput}
-                value={sceneNotes}
-                onChangeText={setSceneNotes}
-                placeholder="Add context for AI voices (mood, setting, etc.)"
-                placeholderTextColor={colors.textDim}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
+          <View>
+            {isPremium && (
+              <View style={styles.aiToggle}>
+                <View>
+                  <Text style={styles.aiToggleLabel}>AI Voices</Text>
+                  <Text style={styles.aiToggleHint}>
+                    Use expressive OpenAI voices
+                  </Text>
+                </View>
+                <Switch
+                  value={useAiVoices}
+                  onValueChange={setUseAiVoices}
+                  trackColor={{ false: colors.textDim, true: colors.amberDim }}
+                  thumbColor={useAiVoices ? colors.amber : colors.creamDim}
+                />
+              </View>
             )}
+
+            <View style={styles.notesSection}>
+              <Pressable
+                style={styles.notesToggle}
+                onPress={() => setShowNotes(!showNotes)}
+              >
+                <Text style={styles.notesToggleText}>
+                  Scene Notes {showNotes ? '▲' : '▼'}
+                </Text>
+              </Pressable>
+              {showNotes && (
+                <TextInput
+                  style={styles.notesInput}
+                  value={sceneNotes}
+                  onChangeText={setSceneNotes}
+                  placeholder="Add context for AI voices (mood, setting, etc.)"
+                  placeholderTextColor={colors.textDim}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              )}
+            </View>
           </View>
         }
         renderItem={({ item }) => (
@@ -53,15 +90,20 @@ export default function SetupScreen() {
             ]}
             onPress={() => selectCharacter(item.name)}
           >
-            <Text style={[
-              styles.cardName,
-              selectedCharacter === item.name && styles.cardNameSelected,
-            ]}>
-              {item.name}
-            </Text>
-            <Text style={styles.cardLines}>
-              {item.lineCount} line{item.lineCount !== 1 ? 's' : ''}
-            </Text>
+            <View>
+              <Text style={[
+                styles.cardName,
+                selectedCharacter === item.name && styles.cardNameSelected,
+              ]}>
+                {item.name}
+              </Text>
+              <Text style={styles.cardLines}>
+                {item.lineCount} line{item.lineCount !== 1 ? 's' : ''}
+              </Text>
+            </View>
+            {selectedCharacter === item.name && (
+              <Text style={styles.youBadge}>YOU</Text>
+            )}
           </Pressable>
         )}
       />
@@ -123,6 +165,37 @@ const styles = StyleSheet.create({
   cardLines: {
     fontSize: 13,
     color: colors.textSecondary,
+    marginTop: 2,
+  },
+  youBadge: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.stageDeep,
+    backgroundColor: colors.amber,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    overflow: 'hidden',
+    letterSpacing: 1,
+  },
+  aiToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.stageCard,
+    borderRadius: 12,
+    padding: spacing.md,
+    marginTop: spacing.lg,
+  },
+  aiToggleLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.cream,
+  },
+  aiToggleHint: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   notesSection: {
     marginTop: spacing.lg,
