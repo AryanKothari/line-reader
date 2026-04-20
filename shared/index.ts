@@ -1,0 +1,7 @@
+export * from './types'
+export * from './lib/supabase'
+export * from './lib/projects'
+export * from './lib/parser/script-parser'
+export * from './lib/parser/ocr-cleanup'
+export * from './lib/speech/matching'
+export { useScriptStore } from './stores/script-store'
