@@ -7,7 +7,9 @@
     "ios": "expo run:ios",
     "android": "expo run:android",
     "prebuild": "expo prebuild",
-    "run:ios": "expo run:ios"
+    "run:ios": "expo run:ios",
+    "sync-shared": "bash scripts/sync-shared.sh",
+    "postinstall": "bash scripts/sync-shared.sh"
   },
   "dependencies": {
     "@expo/metro-runtime": "^55.0.9",
