@@ -1,11 +1,7 @@
-import { Audio } from 'expo-av'
-import * as FileSystem from 'expo-file-system'
 import { getSupabase } from '@line-reader/shared'
-import Constants from 'expo-constants'
 
 let enabled = false
 const voiceMap = new Map<string, string>()
-let currentSound: Audio.Sound | null = null
 
 const TTS_VOICES = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']
 
@@ -36,89 +32,17 @@ export function autoAssignVoices(characters: string[]): void {
 }
 
 export async function speak(
-  text: string,
-  character: string,
-  sceneNotes?: string
+  _text: string,
+  _character: string,
+  _sceneNotes?: string
 ): Promise<boolean> {
-  if (!enabled) return false
-
-  const voice = voiceMap.get(character)
-  if (!voice) return false
-
-  try {
-    const supabase = getSupabase()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return false
-
-    const apiBase = Constants.expoConfig?.extra?.apiUrl
-      ?? process.env.EXPO_PUBLIC_API_URL
-      ?? ''
-
-    if (!apiBase) return false
-
-    const response = await fetch(`${apiBase}/api/tts`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        text,
-        voice,
-        instructions: sceneNotes
-          ? `You are playing the character ${character}. Scene context: ${sceneNotes}`
-          : undefined,
-      }),
-    })
-
-    if (!response.ok) return false
-
-    const arrayBuffer = await response.arrayBuffer()
-    const base64 = btoa(
-      String.fromCharCode(...new Uint8Array(arrayBuffer))
-    )
-
-    const tempFile = `${FileSystem.cacheDirectory}tts_${Date.now()}.mp3`
-    await FileSystem.writeAsStringAsync(tempFile, base64, {
-      encoding: FileSystem.EncodingType.Base64,
-    })
-
-    await stopCurrentSound()
-
-    const { sound } = await Audio.Sound.createAsync({ uri: tempFile })
-    currentSound = sound
-
-    await sound.playAsync()
-
-    return new Promise((resolve) => {
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if ('didJustFinish' in status && status.didJustFinish) {
-          sound.unloadAsync()
-          currentSound = null
-          FileSystem.deleteAsync(tempFile, { idempotent: true })
-          resolve(true)
-        }
-      })
-    })
-  } catch {
-    return false
-  }
-}
-
-async function stopCurrentSound(): Promise<void> {
-  if (currentSound) {
-    try {
-      await currentSound.stopAsync()
-      await currentSound.unloadAsync()
-    } catch {
-      // ignore
-    }
-    currentSound = null
-  }
+  // AI voice playback requires expo-av which has SDK 55 compatibility issues.
+  // Will be re-enabled once expo-av is fixed upstream.
+  // For now, falls back to expo-speech (system TTS) in useRehearsal.
+  return false
 }
 
 export function clearVoices(): void {
   voiceMap.clear()
   enabled = false
-  stopCurrentSound()
 }
