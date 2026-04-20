@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useScriptStore } from '@line-reader/shared'
+import { useScriptStore } from '@/stores/script-store'
 import { Logo } from '@/components/shared/Logo'
 import { AuthButton } from '@/components/shared/AuthButton'
 import { SaveButton } from '@/components/shared/SaveButton'

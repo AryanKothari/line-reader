@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native'
+import { useState } from 'react'
+import { View, Text, StyleSheet, FlatList, Pressable, TextInput } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useScriptStore } from '@line-reader/shared'
@@ -6,7 +7,11 @@ import { colors, spacing } from '../theme'
 
 export default function SetupScreen() {
   const router = useRouter()
-  const { characters, selectedCharacter, selectCharacter } = useScriptStore()
+  const {
+    characters, selectedCharacter, selectCharacter,
+    sceneNotes, setSceneNotes,
+  } = useScriptStore()
+  const [showNotes, setShowNotes] = useState(false)
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -16,6 +21,30 @@ export default function SetupScreen() {
         data={characters}
         keyExtractor={(item) => item.name}
         contentContainerStyle={styles.list}
+        ListFooterComponent={
+          <View style={styles.notesSection}>
+            <Pressable
+              style={styles.notesToggle}
+              onPress={() => setShowNotes(!showNotes)}
+            >
+              <Text style={styles.notesToggleText}>
+                Scene Notes {showNotes ? '▲' : '▼'}
+              </Text>
+            </Pressable>
+            {showNotes && (
+              <TextInput
+                style={styles.notesInput}
+                value={sceneNotes}
+                onChangeText={setSceneNotes}
+                placeholder="Add context for AI voices (mood, setting, etc.)"
+                placeholderTextColor={colors.textDim}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+            )}
+          </View>
+        }
         renderItem={({ item }) => (
           <Pressable
             style={[
@@ -38,12 +67,14 @@ export default function SetupScreen() {
       />
 
       {selectedCharacter && (
-        <Pressable
-          style={styles.startButton}
-          onPress={() => router.push('/rehearsal')}
-        >
-          <Text style={styles.startButtonText}>Start Rehearsal</Text>
-        </Pressable>
+        <View style={styles.footer}>
+          <Pressable
+            style={styles.startButton}
+            onPress={() => router.push('/rehearsal')}
+          >
+            <Text style={styles.startButtonText}>Start Rehearsal</Text>
+          </Pressable>
+        </View>
       )}
     </SafeAreaView>
   )
@@ -53,16 +84,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.stageDeep,
-    padding: spacing.lg,
   },
   heading: {
     fontSize: 22,
     fontWeight: '700',
     color: colors.cream,
-    marginBottom: spacing.lg,
+    padding: spacing.lg,
+    paddingBottom: spacing.sm,
   },
   list: {
+    padding: spacing.lg,
+    paddingTop: spacing.sm,
     gap: spacing.sm,
+    paddingBottom: 100,
   },
   card: {
     backgroundColor: colors.stageCard,
@@ -90,12 +124,42 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
   },
+  notesSection: {
+    marginTop: spacing.lg,
+  },
+  notesToggle: {
+    paddingVertical: spacing.sm,
+  },
+  notesToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  notesInput: {
+    backgroundColor: colors.stageCard,
+    borderRadius: 10,
+    padding: spacing.md,
+    color: colors.textPrimary,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: spacing.sm,
+    minHeight: 80,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.stageBg,
+    borderTopWidth: 1,
+    borderTopColor: colors.stageCard,
+    padding: spacing.md,
+  },
   startButton: {
     backgroundColor: colors.amber,
     paddingVertical: spacing.md,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: spacing.lg,
   },
   startButtonText: {
     fontSize: 17,

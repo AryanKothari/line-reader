@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useScriptStore } from '@line-reader/shared'
+import { useScriptStore } from '@/stores/script-store'
 import { useAuth } from '@/lib/auth-context'
 import { saveProject } from '@line-reader/shared'
 import { saveScript as saveToLocal } from '@/lib/storage'

@@ -1,33 +1,40 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useAuth } from '../lib/auth-context'
+import { FilePicker } from '../components/FilePicker'
+import { SavedScriptsList } from '../components/SavedScriptsList'
 import { colors, spacing } from '../theme'
 
 export default function HomeScreen() {
   const router = useRouter()
+  const { user } = useAuth()
+
+  const handleParsed = () => {
+    router.push('/review')
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Line Reader</Text>
-        <Text style={styles.subtitle}>Your acting rehearsal partner</Text>
-      </View>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Line Reader</Text>
+          <Text style={styles.subtitle}>Your acting rehearsal partner</Text>
+        </View>
 
-      <View style={styles.actions}>
-        <Pressable
-          style={styles.primaryButton}
-          onPress={() => {/* file picker in Phase 3 */}}
-        >
-          <Text style={styles.primaryButtonText}>Upload Script</Text>
-        </Pressable>
+        <FilePicker onParsed={handleParsed} />
 
-        <Pressable
-          style={styles.secondaryButton}
-          onPress={() => router.push('/dashboard')}
-        >
-          <Text style={styles.secondaryButtonText}>My Projects</Text>
-        </Pressable>
-      </View>
+        {user && (
+          <Pressable
+            style={styles.dashboardButton}
+            onPress={() => router.push('/dashboard')}
+          >
+            <Text style={styles.dashboardButtonText}>My Projects</Text>
+          </Pressable>
+        )}
+
+        <SavedScriptsList onLoaded={handleParsed} />
+      </ScrollView>
     </SafeAreaView>
   )
 }
@@ -36,12 +43,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.stageDeep,
+  },
+  scroll: {
     padding: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   header: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: spacing.xl,
   },
   title: {
     fontSize: 36,
@@ -53,30 +62,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
   },
-  actions: {
-    gap: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  primaryButton: {
-    backgroundColor: colors.amber,
-    paddingVertical: spacing.md,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  primaryButtonText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.stageDeep,
-  },
-  secondaryButton: {
+  dashboardButton: {
     backgroundColor: colors.stageCard,
     paddingVertical: spacing.md,
     borderRadius: 12,
     alignItems: 'center',
+    marginTop: spacing.md,
     borderWidth: 1,
     borderColor: colors.textDim,
   },
-  secondaryButtonText: {
+  dashboardButtonText: {
     fontSize: 17,
     fontWeight: '600',
     color: colors.cream,

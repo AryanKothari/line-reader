@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useSaveProject } from '@/hooks/useSaveProject'
-import { useScriptStore } from '@line-reader/shared'
+import { useScriptStore } from '@/stores/script-store'
 
 export function SaveButton() {
   const { save, saving, showNameModal, dismissModal } = useSaveProject()

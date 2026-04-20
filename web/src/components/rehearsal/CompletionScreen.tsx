@@ -1,6 +1,6 @@
 'use client'
 
-import { useScriptStore } from '@line-reader/shared'
+import { useScriptStore } from '@/stores/script-store'
 
 type Props = {
   onRestart: () => void

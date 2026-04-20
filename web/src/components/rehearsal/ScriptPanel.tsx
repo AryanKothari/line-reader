@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useScriptStore } from '@line-reader/shared'
+import { useScriptStore } from '@/stores/script-store'
 import { renderPdfPages } from '@/lib/parser/pdf-extract'
 
 const CHAR_COLORS = ['text-rose-400', 'text-green-400', 'text-blue-400', 'text-purple-400', 'text-orange-400', 'text-teal-400']

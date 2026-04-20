@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { useScriptStore } from '@line-reader/shared'
+import { useScriptStore } from '@/stores/script-store'
 import { getProjects, deleteProject, type Project } from '@line-reader/shared'
 import { extractTextFromPdf } from '@/lib/parser/pdf-extract'
 import { parseFromText } from '@line-reader/shared'

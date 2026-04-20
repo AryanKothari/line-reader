@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef } from 'react'
-import { useScriptStore } from '@line-reader/shared'
+import { useScriptStore } from '@/stores/script-store'
 import * as synthesis from '@/lib/speech/synthesis'
 import * as recognition from '@/lib/speech/recognition'
 import * as aiVoices from '@/lib/ai-voices'
