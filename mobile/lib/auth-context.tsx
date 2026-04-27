@@ -1,6 +1,8 @@
+import 'react-native-url-polyfill/auto'
 import { createContext, useContext, useEffect, useState } from 'react'
 import { initSupabase, getSupabase } from '@line-reader/shared'
 import type { User } from '@supabase/supabase-js'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import Constants from 'expo-constants'
 
 type Profile = {
@@ -32,12 +34,28 @@ const AuthContext = createContext<AuthState>({
 const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl ?? process.env.EXPO_PUBLIC_SUPABASE_URL ?? ''
 const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? ''
 
+console.log('[Auth] Supabase URL:', supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'EMPTY')
+console.log('[Auth] Supabase Key:', supabaseAnonKey ? 'present (' + supabaseAnonKey.length + ' chars)' : 'EMPTY')
+
 if (supabaseUrl && supabaseAnonKey) {
   try {
-    initSupabase(supabaseUrl, supabaseAnonKey)
+    initSupabase(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        storage: AsyncStorage,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
+      global: {
+        fetch: fetch.bind(globalThis),
+      },
+    })
+    console.log('[Auth] Supabase initialized with AsyncStorage')
   } catch {
-    // already initialized
+    console.log('[Auth] Supabase already initialized')
   }
+} else {
+  console.warn('[Auth] Missing Supabase credentials — login will not work')
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

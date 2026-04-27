@@ -1,9 +1,9 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient, type SupabaseClientOptions } from '@supabase/supabase-js'
 
 let instance: SupabaseClient | null = null
 
-export function initSupabase(url: string, anonKey: string): SupabaseClient {
-  instance = createClient(url, anonKey)
+export function initSupabase(url: string, anonKey: string, options?: SupabaseClientOptions<'public'>): SupabaseClient {
+  instance = createClient(url, anonKey, options)
   return instance
 }
 

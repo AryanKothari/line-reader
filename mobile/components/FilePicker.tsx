@@ -1,6 +1,6 @@
 import { Pressable, Text, StyleSheet, Alert } from 'react-native'
 import * as DocumentPicker from 'expo-document-picker'
-import * as FileSystem from 'expo-file-system'
+import * as FileSystem from 'expo-file-system/legacy'
 import { parseFromText, useScriptStore } from '@line-reader/shared'
 import { colors, spacing } from '../theme'
 
@@ -49,7 +49,6 @@ export function FilePicker({ onParsed }: Props) {
         }
       }
 
-      // Text file — parse as script
       const { script } = parseFromText(content)
       if (script.length === 0) {
         Alert.alert('Error', 'No dialogue found in this file')
@@ -59,8 +58,9 @@ export function FilePicker({ onParsed }: Props) {
       setParsedScript(script)
       setProject(null, name.replace(/\.[^.]+$/, ''))
       onParsed?.()
-    } catch (err) {
-      Alert.alert('Error', 'Failed to read file')
+    } catch (err: any) {
+      console.error('FilePicker error:', err)
+      Alert.alert('Error', `Failed to read file: ${err?.message || 'Unknown error'}`)
     }
   }
 
